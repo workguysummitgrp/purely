@@ -1,0 +1,17 @@
+spring:
+    application:
+        name: user-service
+    data:
+        mongodb:
+            uri: mongodb://127.0.0.1:27017/purely_user_service
+    jpa:
+        hibernate:
+            ddl-auto: update
+
+server:
+    port: 9050
+
+eureka:
+    client:
+        serviceUrl:
+            defaultZone: http://localhost:8761/eureka/

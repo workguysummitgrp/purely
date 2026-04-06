@@ -1,0 +1,87 @@
+name: Requirements Approved
+
+on:
+  repository_dispatch:
+    types: [requirements-approved]
+
+  workflow_dispatch:
+    inputs:
+      project_slug:
+        description: "Project slug"
+        required: true
+        default: "my-project"
+
+      jira_tickets:
+        description: "Jira ticket IDs"
+        required: true
+        default: "PROJ-001"
+
+      timestamp:
+        description: "Approval timestamp"
+        required: true
+        default: "manual-test"
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  on-approval:
+    name: Handle Requirements Approval
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
+
+      - name: Extract approval details
+        id: approval
+        env:
+          PROJECT_PAYLOAD: ${{ github.event.client_payload.project_slug }}
+          PROJECT_INPUT: ${{ inputs.project_slug }}
+          JIRA_PAYLOAD: ${{ github.event.client_payload.jira_tickets }}
+          JIRA_INPUT: ${{ inputs.jira_tickets }}
+          TIME_PAYLOAD: ${{ github.event.client_payload.timestamp }}
+          TIME_INPUT: ${{ inputs.timestamp }}
+        run: |
+          PROJECT="${PROJECT_PAYLOAD:-$PROJECT_INPUT}"
+          JIRA="${JIRA_PAYLOAD:-$JIRA_INPUT}"
+          TIME="${TIME_PAYLOAD:-$TIME_INPUT}"
+
+          echo "project=$PROJECT" >> "$GITHUB_OUTPUT"
+          echo "jira=$JIRA" >> "$GITHUB_OUTPUT"
+          echo "time=$TIME" >> "$GITHUB_OUTPUT"
+
+      - name: Log approval details
+        env:
+          PROJECT: ${{ steps.approval.outputs.project }}
+          JIRA: ${{ steps.approval.outputs.jira }}
+          TIME: ${{ steps.approval.outputs.time }}
+        run: |
+          echo "======================================"
+          echo "REQUIREMENTS APPROVAL RECEIVED"
+          echo "======================================"
+          echo "Project: $PROJECT"
+          echo "Jira Tickets: $JIRA"
+          echo "Approval Timestamp: $TIME"
+          echo "Repository: $GITHUB_REPOSITORY"
+          echo "Triggered by: $GITHUB_ACTOR"
+          echo "======================================"
+
+      - name: Next steps placeholder
+        run: |
+          echo "Requirements approved."
+          echo "Downstream development pipeline can now start."
+
+      - name: Approval summary
+        env:
+          PROJECT: ${{ steps.approval.outputs.project }}
+          JIRA: ${{ steps.approval.outputs.jira }}
+          TIME: ${{ steps.approval.outputs.time }}
+        run: |
+          echo "======================================"
+          echo "APPROVAL SUMMARY"
+          echo "Project: $PROJECT"
+          echo "Jira Tickets: $JIRA"
+          echo "Timestamp: $TIME"
+          echo "======================================"

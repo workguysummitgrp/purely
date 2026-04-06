@@ -1,0 +1,53 @@
+name: Dependency Security
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pull-requests: write
+  security-events: write
+
+concurrency:
+  group: dependency-security-${{ github.event.pull_request.number || github.run_id }}
+  cancel-in-progress: true
+
+jobs:
+  dependency-security:
+    name: Dependency Security
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
+
+      # ------------------------------
+      # Dependency Vulnerability Scan
+      # ------------------------------
+
+      - name: Dependency review (PR)
+        if: github.event_name == 'pull_request'
+        uses: actions/dependency-review-action@2031cfc080254a8a887f58cffee85186f0e49e48 # v4
+        with:
+          fail-on-severity: high
+          comment-summary-in-pr: true
+          license-check: true
+          vulnerability-check: true
+
+      # ------------------------------
+      # Manual Test Mode
+      # Allows testing workflow manually
+      # ------------------------------
+
+      - name: Dependency review (manual test)
+        if: github.event_name == 'workflow_dispatch'
+        uses: actions/dependency-review-action@2031cfc080254a8a887f58cffee85186f0e49e48 # v4
+        with:
+          base-ref: ${{ github.event.repository.default_branch }}
+          head-ref: ${{ github.event.repository.default_branch }}
+          license-check: true
+          vulnerability-check: true

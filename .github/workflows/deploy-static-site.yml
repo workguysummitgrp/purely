@@ -1,0 +1,208 @@
+name: Deploy to AWS S3 + CloudFront
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - ".github/workflows/deploy-static-site.yml"
+  workflow_dispatch:
+    inputs:
+      cf_template_path:
+        description: "Path to CloudFormation template"
+        required: false
+        default: "cloudformation/static-site.yaml"
+      site_content_path:
+        description: "Path to static site content directory"
+        required: false
+        default: "site/"
+      stack_name:
+        description: "CloudFormation stack name"
+        required: false
+        default: "static-site-dev"
+      aws_region:
+        description: "AWS region"
+        required: false
+        default: "us-east-1"
+
+permissions:
+  id-token: write
+  contents: read
+
+env:
+  AWS_REGION: ${{ inputs.aws_region || 'us-east-1' }}
+  STACK_NAME: ${{ inputs.stack_name || 'static-site-dev' }}
+  ENVIRONMENT: dev
+  CF_TEMPLATE_PATH: ${{ inputs.cf_template_path || 'cloudformation/static-site.yaml' }}
+  SITE_CONTENT_PATH: ${{ inputs.site_content_path || 'site/' }}
+
+jobs:
+  check-creds:
+    runs-on: ubuntu-latest
+    outputs:
+      has_aws_creds: ${{ steps.check.outputs.has_creds }}
+      has_oidc_role: ${{ steps.check.outputs.has_oidc_role }}
+    steps:
+      - name: Check AWS credentials
+        id: check
+        env:
+          AWS_KEY: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_ROLE: ${{ secrets.AWS_OIDC_ROLE_ARN }}
+        run: |
+          if [ -n "$AWS_ROLE" ]; then
+            echo "has_oidc_role=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "has_oidc_role=false" >> "$GITHUB_OUTPUT"
+          fi
+          if [ -n "$AWS_ROLE" ] || { [ -n "$AWS_KEY" ] && [ -n "$AWS_SECRET" ]; }; then
+            echo "has_creds=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "has_creds=false" >> "$GITHUB_OUTPUT"
+          fi
+
+  deploy:
+    needs: check-creds
+    if: needs.check-creds.outputs.has_aws_creds == 'true'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
+
+      - name: Validate deployment inputs
+        env:
+          CF_PATH: ${{ env.CF_TEMPLATE_PATH }}
+          SITE_PATH: ${{ env.SITE_CONTENT_PATH }}
+        run: |
+          test -f "$CF_PATH"
+          test -d "$SITE_PATH"
+
+      - name: Configure AWS Credentials (OIDC)
+        if: needs.check-creds.outputs.has_oidc_role == 'true'
+        uses: aws-actions/configure-aws-credentials@7474bc4690e29a8392af63c5b98e7449536d5c3a # v4
+        with:
+          role-to-assume: ${{ secrets.AWS_OIDC_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Configure AWS Credentials (static keys fallback)
+        if: needs.check-creds.outputs.has_oidc_role != 'true'
+        uses: aws-actions/configure-aws-credentials@7474bc4690e29a8392af63c5b98e7449536d5c3a # v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-session-token: ${{ secrets.AWS_SESSION_TOKEN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Validate CloudFormation template
+        env:
+          CF_PATH: ${{ env.CF_TEMPLATE_PATH }}
+        run: |
+          aws cloudformation validate-template \
+            --template-body "file://$CF_PATH"
+
+      - name: Deploy CloudFormation stack
+        env:
+          CF_PATH: ${{ env.CF_TEMPLATE_PATH }}
+          STACK: ${{ env.STACK_NAME }}
+          REGION: ${{ env.AWS_REGION }}
+          ENV_NAME: ${{ env.ENVIRONMENT }}
+        run: |
+          aws cloudformation deploy \
+            --template-file "$CF_PATH" \
+            --stack-name "$STACK" \
+            --parameter-overrides "Environment=$ENV_NAME" \
+            --no-fail-on-empty-changeset \
+            --region "$REGION"
+
+      - name: Get S3 bucket name
+        id: get-bucket
+        env:
+          STACK: ${{ env.STACK_NAME }}
+          REGION: ${{ env.AWS_REGION }}
+        run: |
+          BUCKET_NAME=$(aws cloudformation describe-stacks \
+            --stack-name "$STACK" \
+            --region "$REGION" \
+            --query "Stacks[0].Outputs[?OutputKey=='BucketName'].OutputValue" \
+            --output text)
+          echo "bucket_name=$BUCKET_NAME" >> "$GITHUB_OUTPUT"
+
+      - name: Sync website files to S3
+        env:
+          SITE_PATH: ${{ env.SITE_CONTENT_PATH }}
+          BUCKET: ${{ steps.get-bucket.outputs.bucket_name }}
+          REGION: ${{ env.AWS_REGION }}
+        run: |
+          aws s3 sync "$SITE_PATH" "s3://$BUCKET/" \
+            --delete \
+            --region "$REGION"
+
+      - name: Get CloudFront distribution ID
+        id: get-distribution
+        env:
+          STACK: ${{ env.STACK_NAME }}
+          REGION: ${{ env.AWS_REGION }}
+        run: |
+          DISTRIBUTION_ID=$(aws cloudformation describe-stacks \
+            --stack-name "$STACK" \
+            --region "$REGION" \
+            --query "Stacks[0].Outputs[?OutputKey=='DistributionId'].OutputValue" \
+            --output text)
+          echo "distribution_id=$DISTRIBUTION_ID" >> "$GITHUB_OUTPUT"
+
+      - name: Invalidate CloudFront cache
+        env:
+          DIST_ID: ${{ steps.get-distribution.outputs.distribution_id }}
+        run: |
+          aws cloudfront create-invalidation \
+            --distribution-id "$DIST_ID" \
+            --paths "/*"
+
+      - name: Get website URL
+        id: get-url
+        env:
+          STACK: ${{ env.STACK_NAME }}
+          REGION: ${{ env.AWS_REGION }}
+        run: |
+          WEBSITE_URL=$(aws cloudformation describe-stacks \
+            --stack-name "$STACK" \
+            --region "$REGION" \
+            --query "Stacks[0].Outputs[?OutputKey=='WebsiteURL'].OutputValue" \
+            --output text)
+          echo "website_url=$WEBSITE_URL" >> "$GITHUB_OUTPUT"
+
+      - name: Deployment summary
+        env:
+          STACK: ${{ env.STACK_NAME }}
+          REGION: ${{ env.AWS_REGION }}
+          ENV_NAME: ${{ env.ENVIRONMENT }}
+          URL: ${{ steps.get-url.outputs.website_url }}
+          BUCKET: ${{ steps.get-bucket.outputs.bucket_name }}
+          DIST_ID: ${{ steps.get-distribution.outputs.distribution_id }}
+        run: |
+          {
+            echo "### Deployment Successful"
+            echo ""
+            echo "**Stack Name:** $STACK"
+            echo "**Region:** $REGION"
+            echo "**Environment:** $ENV_NAME"
+            echo ""
+            echo "**Website URL:** $URL"
+            echo ""
+            echo "**S3 Bucket:** $BUCKET"
+            echo "**CloudFront Distribution:** $DIST_ID"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  skip-deploy:
+    needs: check-creds
+    if: needs.check-creds.outputs.has_aws_creds != 'true'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Deployment skipped
+        run: |
+          {
+            echo "### Deployment Skipped"
+            echo "Missing required AWS credentials. Configure OIDC (AWS_OIDC_ROLE_ARN) or static keys (AWS_ACCESS_KEY_ID + AWS_SECRET_ACCESS_KEY)."
+          } >> "$GITHUB_STEP_SUMMARY"

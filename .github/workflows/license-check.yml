@@ -1,0 +1,59 @@
+﻿name: License Compliance
+
+on:
+  pull_request:
+  workflow_dispatch:
+  schedule:
+    - cron: "0 2 * * *"
+
+permissions:
+  contents: read
+  pull-requests: read
+
+jobs:
+  license-check:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
+
+      - name: Install license scanner
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ruby jq
+          sudo gem install licensee
+
+      - name: Detect repository license
+        run: |
+          echo "Scanning repository license..."
+          licensee detect . --json > license-report.json || true
+
+          if [ ! -s license-report.json ]; then
+            echo '{"matched_license": {"spdx_id": "NONE"}}' > license-report.json
+          fi
+
+          cat license-report.json
+
+      - name: Validate allowed licenses
+        run: |
+          LICENSE=$(jq -r '.matched_license.spdx_id // .licenses[0].spdx_id // "NONE"' license-report.json)
+          echo "Detected license: $LICENSE"
+
+          ALLOWED=("MIT" "Apache-2.0" "BSD-3-Clause")
+
+          if [[ "$LICENSE" == "NONE" ]]; then
+            echo "No license detected in repository"
+            exit 1
+          elif [[ " ${ALLOWED[*]} " =~ " ${LICENSE} " ]]; then
+            echo "License is allowed"
+          else
+            echo "License $LICENSE is not allowed"
+            exit 1
+          fi
+
+      - name: Upload license report
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: license-report
+          path: license-report.json

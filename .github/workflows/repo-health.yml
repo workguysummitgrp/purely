@@ -1,0 +1,74 @@
+name: Repository Health Monitor
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "0 5 * * 1"
+
+permissions:
+  contents: read
+  issues: write
+  pull-requests: write
+  security-events: read
+  actions: read
+
+jobs:
+  repo-health:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Repository information
+        run: |
+          echo "Repository: $GITHUB_REPOSITORY"
+          echo "Branch: $GITHUB_REF"
+          echo "Triggered at: $(date)"
+
+      - name: Detect stale pull requests
+        uses: actions/stale@5bef64f19d7facfb25b37b414482c7164d639639 # v9
+        with:
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+          stale-pr-message: "This PR has been inactive for 14 days."
+          days-before-stale: 14
+          days-before-close: 7
+          stale-pr-label: stale
+          debug-only: true
+
+      - name: Detect stale issues
+        uses: actions/stale@5bef64f19d7facfb25b37b414482c7164d639639 # v9
+        with:
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+          stale-issue-message: "This issue has been inactive for 30 days."
+          days-before-stale: 30
+          days-before-close: 10
+          stale-issue-label: stale
+          debug-only: true
+
+      - name: Check dependency vulnerabilities
+        run: |
+          echo "Running dependency audit"
+          npm audit || true
+          pip list || true
+
+      - name: List recent workflow failures
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+        run: |
+          echo "Checking failed workflows"
+          curl -s \
+            -H "Authorization: Bearer $GH_TOKEN" \
+            "https://api.github.com/repos/$REPO/actions/runs" \
+            | jq '.workflow_runs[] | select(.conclusion=="failure") | {name, html_url}'
+
+      - name: Repository size check
+        run: |
+          echo "Repository size information"
+          du -sh .
+
+      - name: Weekly health summary
+        run: |
+          echo "================================"
+          echo "REPOSITORY HEALTH SUMMARY"
+          echo "Repository: $GITHUB_REPOSITORY"
+          echo "Scan completed at: $(date)"
+          echo "================================"
