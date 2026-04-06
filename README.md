@@ -48,7 +48,7 @@
 ## 📂 Project tree
 
 ```
-fullstack-E-commerce-web-application/
+purely/
 ├── .github/
 │   └── workflows/
 │       ├── ci-cd-auth.yml
