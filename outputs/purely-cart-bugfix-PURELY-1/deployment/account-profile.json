@@ -1,0 +1,150 @@
+{
+  "deploymentMode": "local",
+  "discoveredAt": "2026-04-07T00:00:00Z",
+  "projectSlug": "purely-cart-bugfix-PURELY-1",
+  "workType": "bug-fix",
+  "services": [
+    {
+      "name": "service-registry",
+      "type": "eureka-server",
+      "runtime": "java-17",
+      "framework": "spring-boot-3.2.2",
+      "port": 8761,
+      "url": "http://localhost:8761",
+      "startCommand": "cd microservice-backend/service-registry && mvnw.cmd spring-boot:run",
+      "database": null
+    },
+    {
+      "name": "api-gateway",
+      "type": "gateway",
+      "runtime": "java-17",
+      "framework": "spring-cloud-gateway",
+      "port": 8080,
+      "url": "http://localhost:8080",
+      "startCommand": "cd microservice-backend/api-gateway && mvnw.cmd spring-boot:run",
+      "database": null
+    },
+    {
+      "name": "auth-service",
+      "type": "rest-api",
+      "runtime": "java-17",
+      "framework": "spring-boot-3.2.2",
+      "port": 9030,
+      "url": "http://localhost:9030",
+      "startCommand": "cd microservice-backend/auth-service && mvnw.cmd spring-boot:run",
+      "database": "mongodb://127.0.0.1:27017/purely_auth_service"
+    },
+    {
+      "name": "user-service",
+      "type": "rest-api",
+      "runtime": "java-17",
+      "framework": "spring-boot-3.2.2",
+      "port": 9050,
+      "url": "http://localhost:9050",
+      "startCommand": "cd microservice-backend/user-service && mvnw.cmd spring-boot:run",
+      "database": "mongodb://127.0.0.1:27017/purely_auth_service"
+    },
+    {
+      "name": "cart-service",
+      "type": "rest-api",
+      "runtime": "java-17",
+      "framework": "spring-boot-3.2.2",
+      "port": 9060,
+      "url": "http://localhost:9060",
+      "startCommand": "cd microservice-backend/cart-service && mvnw.cmd spring-boot:run",
+      "database": "mongodb://127.0.0.1:27017/purely_cart_service"
+    },
+    {
+      "name": "product-service",
+      "type": "rest-api",
+      "runtime": "java-17",
+      "framework": "spring-boot-3.2.2",
+      "port": 9020,
+      "url": "http://localhost:9020",
+      "startCommand": "cd microservice-backend/product-service && mvnw.cmd spring-boot:run",
+      "database": "mongodb://127.0.0.1:27017/purely_product_service"
+    },
+    {
+      "name": "category-service",
+      "type": "rest-api",
+      "runtime": "java-17",
+      "framework": "spring-boot-3.2.2",
+      "port": 9010,
+      "url": "http://localhost:9010",
+      "startCommand": "cd microservice-backend/category-service && mvnw.cmd spring-boot:run",
+      "database": "mongodb://127.0.0.1:27017/purely_category_service"
+    },
+    {
+      "name": "order-service",
+      "type": "rest-api",
+      "runtime": "java-17",
+      "framework": "spring-boot-3.2.2",
+      "port": 9040,
+      "url": "http://localhost:9040",
+      "startCommand": "cd microservice-backend/order-service && mvnw.cmd spring-boot:run",
+      "database": "mongodb://127.0.0.1:27017/purely_order_service"
+    },
+    {
+      "name": "notification-service",
+      "type": "rest-api",
+      "runtime": "java-17",
+      "framework": "spring-boot-3.2.2",
+      "port": 9070,
+      "url": "http://localhost:9070",
+      "startCommand": "cd microservice-backend/notification-service && mvnw.cmd spring-boot:run",
+      "database": "mongodb://127.0.0.1:27017/purely_notification_service"
+    },
+    {
+      "name": "frontend",
+      "type": "spa",
+      "runtime": "node-18",
+      "framework": "react-18-vite-5",
+      "port": 5173,
+      "url": "http://localhost:5173",
+      "startCommand": "cd frontend && npm install && npm run dev",
+      "database": null
+    }
+  ],
+  "ports": {
+    "service-registry": 8761,
+    "api-gateway": 8080,
+    "auth-service": 9030,
+    "user-service": 9050,
+    "cart-service": 9060,
+    "product-service": 9020,
+    "category-service": 9010,
+    "order-service": 9040,
+    "notification-service": 9070,
+    "frontend": 5173
+  },
+  "database": "mongodb://127.0.0.1:27017",
+  "frontendUrl": "http://localhost:5173",
+  "gatewayUrl": "http://localhost:8080",
+  "eurekaUrl": "http://localhost:8761",
+  "prerequisites": {
+    "runtimes": [
+      { "name": "Java JDK", "version": "17+", "required": true },
+      { "name": "Node.js", "version": "18+", "required": true },
+      { "name": "npm", "version": "9+", "required": true }
+    ],
+    "databases": [
+      { "name": "MongoDB", "version": "6.x+", "port": 27017, "required": true }
+    ],
+    "tools": [
+      { "name": "Maven Wrapper", "version": "bundled", "required": false, "note": "Included in each service directory" },
+      { "name": "Git", "version": "2.x+", "required": true }
+    ]
+  },
+  "startupOrder": [
+    "service-registry",
+    "api-gateway",
+    "auth-service",
+    "user-service",
+    "product-service",
+    "category-service",
+    "cart-service",
+    "order-service",
+    "notification-service",
+    "frontend"
+  ]
+}

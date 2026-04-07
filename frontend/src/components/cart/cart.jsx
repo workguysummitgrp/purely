@@ -1,3 +1,4 @@
+// Modified by SDLC Agent | 2026-04-07 | purely-cart-bugfix-PURELY-1 | development
 import { useContext } from 'react';
 import './cart.css'
 import CartContext from '../../contexts/cart.context';
@@ -7,6 +8,7 @@ import Loading from '../loading/loading';
 import Info from '../info/info';
 import { AuthContext } from '../../contexts/auth.context';
 import { useNavigate } from "react-router-dom";
+import { PLACEHOLDER_IMAGE } from '../../constants/images';
 
 function Cart({ isCartOpen, onClose }) {
 
@@ -41,7 +43,7 @@ function Cart({ isCartOpen, onClose }) {
                             <div className="cart-products">
                                 {cart.cartItems && cart?.cartItems.map((cartItem) => (
                                     <div className="cart-product" key={cartItem.productId}>
-                                        <img src={`${cartItem.imageUrl}`} alt={cartItem.productName} />
+                                        <img src={`${cartItem.imageUrl}`} alt={cartItem.productName} onError={(e) => { if (!e.target.dataset.fallback) { e.target.dataset.fallback = "true"; e.target.src = PLACEHOLDER_IMAGE; } }} />
                                         <div className="product-info">
                                             <h4>
                                                 {cartItem.productName}
@@ -54,7 +56,7 @@ function Cart({ isCartOpen, onClose }) {
 
                                             </h4>
                                             <span className="product-price">
-                                                {cartItem.price} x {cartItem.quantity} = Rs.  {parseFloat(cartItem.amount).toFixed(2)}
+                                                {parseFloat(cartItem.price || 0).toFixed(2)} x {cartItem.quantity} = Rs.  {parseFloat(cartItem.amount || 0).toFixed(2)}
                                             </span>
                                             <div className="quantity-control">
                                                 <span
@@ -80,7 +82,7 @@ function Cart({ isCartOpen, onClose }) {
                             
                                 {cart.cartItems && (
                                     <div className="cart-summary">
-                                        <h3>Subtotal: Rs. {parseFloat(cart.subtotal).toFixed(2)}</h3>
+                                        <h3>Subtotal: Rs. {parseFloat(cart.subtotal || 0).toFixed(2)}</h3>
                                         <button className="btn checkout-btn" onClick={onCheckout}>Proceed to checkout</button>
                                         </div>
                                 )}

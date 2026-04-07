@@ -3,7 +3,7 @@ spring:
         name: user-service
     data:
         mongodb:
-            uri: mongodb://127.0.0.1:27017/purely_user_service
+            uri: mongodb://127.0.0.1:27017/purely_auth_service
     jpa:
         hibernate:
             ddl-auto: update

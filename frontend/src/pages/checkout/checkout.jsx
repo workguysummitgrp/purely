@@ -1,3 +1,4 @@
+// Modified by SDLC Agent | 2026-04-07 | purely-cart-bugfix-PURELY-1 | development
 import Logo from '../../components/logo/logo';
 import './checkout.css'
 import { useForm } from 'react-hook-form';
@@ -8,6 +9,7 @@ import CartContext from '../../contexts/cart.context';
 import { Link } from 'react-router-dom';
 import Unauthorized from '../auth/auth_error/unauthorized';
 import { AuthContext } from '../../contexts/auth.context';
+import { PLACEHOLDER_IMAGE } from '../../constants/images';
 
 const CheckoutForm = () => {
     
@@ -128,20 +130,20 @@ const CheckoutForm = () => {
                         <hr />
                         {cart?.cartItems.map((cartItem) => (
                             <div className="product" key={cartItem.productId}>
-                                <img src={`${cartItem.imageUrl}`} alt={cartItem.productName} />
+                                <img src={`${cartItem.imageUrl}`} alt={cartItem.productName} onError={(e) => { if (!e.target.dataset.fallback) { e.target.dataset.fallback = "true"; e.target.src = PLACEHOLDER_IMAGE; } }} />
                                 <div className="product-info">
                                     <h4>
                                         {cartItem.productName}
                                     </h4>
                                     <span className="product-price">
-                                        {cartItem.price} x {cartItem.quantity} = Rs.  {parseFloat(cartItem.amount).toFixed(2)}
+                                        {parseFloat(cartItem.price || 0).toFixed(2)} x {cartItem.quantity} = Rs.  {parseFloat(cartItem.amount || 0).toFixed(2)}
                                     </span>
                                 </div>
 
                             </div>
                         ))}
                         <hr />
-                        <h3><span>Sub Total</span><span>Rs. {parseFloat(cart?.subtotal).toFixed(2)}</span></h3><br />
+                        <h3><span>Sub Total</span><span>Rs. {parseFloat(cart?.subtotal || 0).toFixed(2)}</span></h3><br />
                         <small>Delivary charges will be added to above total at you door step by our staffs when we deliver your order.</small>
                         <br />
                         <Link to="/"><button>Edit cart</button></Link>

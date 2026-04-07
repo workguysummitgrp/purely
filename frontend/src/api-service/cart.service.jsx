@@ -1,9 +1,11 @@
+// Modified by SDLC Agent | 2026-04-07 | purely-cart-bugfix-PURELY-1 | development
 import { useState, useEffect } from "react"
 import API_BASE_URL from "./apiConfig";
 import axios from 'axios';
 
 function CartService() {
-    const [cart, setCart] = useState({})
+    // BUG-2 fix (US-002 / ADR-002): safe default cart state prevents NaN from undefined fields
+    const [cart, setCart] = useState({ cartItems: [], subtotal: 0, noOfCartItems: 0 })
     const [cartError, setError] = useState(false);
     const [isProcessingCart, setProcessing] = useState(false);
     const user = JSON.parse(localStorage.getItem("user"));
@@ -60,12 +62,13 @@ function CartService() {
             .catch((error) => {
                 setError(true)
             })
+        setProcessing(false)
         getCartInformation()
     }
 
     const getCartInformation = async () => {
         if (!user?.token) {
-            setCart({})
+            setCart({ cartItems: [], subtotal: 0, noOfCartItems: 0 })
             setError(false)
             return
         }
@@ -78,7 +81,7 @@ function CartService() {
                 setCart(response.data.response)
             })
             .catch((error) => {
-                setCart({cartItems:[]})
+                setCart({ cartItems: [], subtotal: 0, noOfCartItems: 0 })
                 setError(true)
             })
         setProcessing(false)

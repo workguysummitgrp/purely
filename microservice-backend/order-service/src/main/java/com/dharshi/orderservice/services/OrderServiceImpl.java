@@ -51,7 +51,13 @@ public class OrderServiceImpl implements OrderService {
             Order order = orderRequestDtoToOrder(request, cart);
             order = orderRepository.insert(order);
             try {
-                if (order.getId() != null && clearCart(cart, token) && sendConfirmationEmail(user, order)) {
+                if (order.getId() != null) {
+                    clearCart(cart, token);
+                    try {
+                        sendConfirmationEmail(user, order);
+                    } catch (Exception emailEx) {
+                        log.warn("Failed to send order confirmation email for order {}: {}", order.getId(), emailEx.getMessage());
+                    }
                     return ResponseEntity.ok(
                             ApiResponseDto.builder()
                                     .isSuccess(true)
@@ -60,6 +66,8 @@ public class OrderServiceImpl implements OrderService {
                     );
                 }
                 throw new ServiceLogicException("Unable to proceed order!");
+            }catch (ServiceLogicException e) {
+                throw e;
             }catch (Exception e) {
                 orderRepository.deleteById(order.getId());
                 throw new ServiceLogicException(e.getMessage());

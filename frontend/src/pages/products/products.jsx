@@ -1,3 +1,4 @@
+// Modified by SDLC Agent | 2026-04-07 | purely-cart-bugfix-PURELY-1 | development
 import './products.css'
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import Header from "../../components/header/header";
@@ -8,6 +9,7 @@ import ProductService from '../../api-service/product.service';
 import CartContext from '../../contexts/cart.context';
 import { AuthContext } from '../../contexts/auth.context';
 import Footer from '../../components/footer/footer';
+import { PLACEHOLDER_IMAGE } from '../../constants/images';
 
 function Products() {
 
@@ -107,7 +109,7 @@ function ProductsWrapper({ products }) {
                         products.map((product) => {
                             return (
                                 <div className='box' key={product.id}>
-                                    <img src={`${product.imageUrl}`} className="image" alt='product'></img>
+                                    <img src={`${product.imageUrl}`} className="image" alt='product' onError={(e) => { if (!e.target.dataset.fallback) { e.target.dataset.fallback = "true"; e.target.src = PLACEHOLDER_IMAGE; } }}></img>
                                     <div className='price' aria-label='image'>Rs. {product.price}</div>
                                     <div className='text-part'>
                                         <div className='name'>{product.productName}</div>
