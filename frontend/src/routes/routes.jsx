@@ -10,15 +10,22 @@ import OrderSuccess from '../pages/checkout/order.success.jsx';
 import MyAccount from '../pages/my.account/my.account.jsx';
 import NotFound from '../pages/auth/auth_error/notfound.jsx';
 import Unauthorized from '../pages/auth/auth_error/unauthorized.jsx';
-import WishlistPage from '../pages/wishlist/WishlistPage.jsx';
-import SharedWishlistPage from '../pages/wishlist/SharedWishlistPage.jsx';
 
 const Home = lazy(() => import('../pages/home/home.jsx'))
 const Login = lazy(() => import('../pages/auth/login/login.jsx'))
 const Register = lazy(() => import('../pages/auth/register/register.jsx'))
 const RegistrationVerfication = lazy(() => import('../pages/auth/register/registration.verification.jsx'))
 const RegistrationSuccessful = lazy(() => import('../pages/auth/register/registration.success.jsx'))
+const WishlistPage = lazy(() => import('../pages/wishlist/WishlistPage.jsx'))
+const SharedWishlistPage = lazy(() => import('../pages/wishlist/SharedWishlistPage.jsx'))
 
+/**
+ * AppRoutes — Centralised route configuration.
+ *
+ * Modification summary (wishlist feature):
+ *   - Added /wishlist → WishlistPage (authenticated)
+ *   - Added /wishlist/shared/:shareToken → SharedWishlistPage (public)
+ */
 function AppRoutes() {
   return (
     <Suspense fallback={<Loading />}>
