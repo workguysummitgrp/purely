@@ -6,22 +6,13 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-/**
- * Request DTO for adding an item to the cart via cart-service OpenFeign client.
- *
- * <p>Mirrors the {@code CartItemRequestDto} structure expected by
- * cart-service's {@code POST /cart/add} endpoint.</p>
- */
 @Data
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
 public class CartItemRequestDto {
 
-    /** Product identifier to add to the cart. */
     private String productId;
-
-    /** Quantity to add. Defaults to 1 for wishlist-to-cart moves. */
     private int quantity;
 
 }

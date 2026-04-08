@@ -6,37 +6,18 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-/**
- * DTO representing product details as returned by product-service.
- *
- * <p>Mirrors the product-service response structure used across
- * existing Purely microservices (e.g., cart-service's ProductDto).</p>
- */
 @Data
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
 public class ProductDto {
 
-    /** Product identifier. */
     private String id;
-
-    /** Product display name. */
     private String productName;
-
-    /** Product price. */
     private double price;
-
-    /** Product description. */
     private String description;
-
-    /** Product image URL. */
     private String imageUrl;
-
-    /** Category identifier this product belongs to. */
     private String categoryId;
-
-    /** Category display name. */
     private String categoryName;
 
 }

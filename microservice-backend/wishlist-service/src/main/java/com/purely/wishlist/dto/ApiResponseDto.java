@@ -4,26 +4,12 @@ package com.purely.wishlist.dto;
 import lombok.Builder;
 import lombok.Data;
 
-/**
- * Generic API response wrapper used by all wishlist endpoints.
- *
- * <p>Follows the {@code ApiResponseDto} pattern established by cart-service
- * and other Purely microservices. Every HTTP response body is wrapped in
- * this structure for consistency.</p>
- *
- * @param <T> the type of the {@code response} payload
- */
 @Data
 @Builder
 public class ApiResponseDto<T> {
 
-    /** Indicates whether the operation completed successfully. */
     private boolean isSuccess;
-
-    /** Human-readable message describing the outcome. */
     private String message;
-
-    /** The response payload; may be null for operations without return data. */
     private T response;
 
 }

@@ -15,46 +15,14 @@ import java.util.Optional;
  */
 public interface WishlistRepository extends MongoRepository<WishlistItem, String> {
 
-    /**
-     * Retrieve all wishlist items belonging to a specific user.
-     *
-     * @param userId the owner's user identifier
-     * @return list of wishlist items, possibly empty
-     */
     List<WishlistItem> findByUserId(String userId);
 
-    /**
-     * Find a specific wishlist entry for a user-product combination.
-     *
-     * @param userId    the owner's user identifier
-     * @param productId the product identifier
-     * @return an Optional containing the item if it exists
-     */
     Optional<WishlistItem> findByUserIdAndProductId(String userId, String productId);
 
-    /**
-     * Check whether a user already has a specific product in their wishlist.
-     *
-     * @param userId    the owner's user identifier
-     * @param productId the product identifier
-     * @return true if the combination exists
-     */
     boolean existsByUserIdAndProductId(String userId, String productId);
 
-    /**
-     * Delete a wishlist entry by user and product identifiers.
-     *
-     * @param userId    the owner's user identifier
-     * @param productId the product identifier
-     */
     void deleteByUserIdAndProductId(String userId, String productId);
 
-    /**
-     * Count the number of wishlist items for a specific user.
-     *
-     * @param userId the owner's user identifier
-     * @return the count of wishlist items
-     */
     long countByUserId(String userId);
 
 }

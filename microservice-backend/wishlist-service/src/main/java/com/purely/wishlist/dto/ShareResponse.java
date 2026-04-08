@@ -6,22 +6,13 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-/**
- * Response DTO returned when a user shares their wishlist.
- *
- * <p>Contains the generated share token and the full shareable URL
- * that can be distributed to friends/family for read-only access.</p>
- */
 @Data
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
 public class ShareResponse {
 
-    /** UUID-based share token. */
     private String shareToken;
-
-    /** Full shareable URL (e.g., /api/wishlist/shared/{shareToken}). */
     private String shareUrl;
 
 }

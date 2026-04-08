@@ -7,19 +7,12 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-/**
- * Request body for adding a product to the wishlist.
- *
- * <p>The {@code productId} is validated at the controller boundary
- * via Bean Validation ({@code @NotBlank}) before reaching the service layer.</p>
- */
 @Data
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
 public class AddToWishlistRequest {
 
-    /** Product identifier to add to the wishlist. Must not be null or blank. */
     @NotBlank(message = "Product ID is required")
     private String productId;
 

@@ -13,20 +13,8 @@ import java.util.Optional;
  */
 public interface ShareTokenRepository extends MongoRepository<ShareToken, String> {
 
-    /**
-     * Find a share token document by its token string.
-     *
-     * @param token the UUID share token
-     * @return an Optional containing the share token if it exists
-     */
     Optional<ShareToken> findByToken(String token);
 
-    /**
-     * Find a share token document by the owning user's identifier.
-     *
-     * @param userId the owner's user identifier
-     * @return an Optional containing the share token if one exists for this user
-     */
     Optional<ShareToken> findByUserId(String userId);
 
 }
