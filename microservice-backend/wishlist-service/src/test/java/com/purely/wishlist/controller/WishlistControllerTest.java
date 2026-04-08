@@ -10,15 +10,19 @@ import com.purely.wishlist.exception.DuplicateItemException;
 import com.purely.wishlist.exception.GlobalExceptionHandler;
 import com.purely.wishlist.exception.ResourceNotFoundException;
 import com.purely.wishlist.exception.ServiceUnavailableException;
+import com.purely.wishlist.security.AuthTokenFilter;
+import com.purely.wishlist.security.WebSecurityConfig;
 import com.purely.wishlist.service.WishlistService;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.bean.MockBean;
+import org.springframework.context.annotation.Import;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.time.LocalDateTime;
@@ -28,6 +32,7 @@ import java.util.List;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
@@ -52,7 +57,6 @@ class WishlistControllerTest {
 
     private static final String USER_ID = "user-123";
     private static final String PRODUCT_ID = "prod-456";
-    private static final String USER_HEADER = "X-User-Id";
 
     // ========================= US-001: Add to Wishlist =========================
 
@@ -66,7 +70,7 @@ class WishlistControllerTest {
         AddToWishlistRequest request = AddToWishlistRequest.builder().productId(PRODUCT_ID).build();
 
         mockMvc.perform(post("/wishlist/add")
-                        .header(USER_HEADER, USER_ID)
+                        .with(user(USER_ID).roles("USER"))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isCreated())
@@ -83,7 +87,7 @@ class WishlistControllerTest {
         AddToWishlistRequest request = AddToWishlistRequest.builder().productId(PRODUCT_ID).build();
 
         mockMvc.perform(post("/wishlist/add")
-                        .header(USER_HEADER, USER_ID)
+                        .with(user(USER_ID).roles("USER"))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isConflict())
@@ -100,7 +104,7 @@ class WishlistControllerTest {
         AddToWishlistRequest request = AddToWishlistRequest.builder().productId(PRODUCT_ID).build();
 
         mockMvc.perform(post("/wishlist/add")
-                        .header(USER_HEADER, USER_ID)
+                        .with(user(USER_ID).roles("USER"))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isNotFound())
@@ -113,7 +117,7 @@ class WishlistControllerTest {
         AddToWishlistRequest request = AddToWishlistRequest.builder().productId("").build();
 
         mockMvc.perform(post("/wishlist/add")
-                        .header(USER_HEADER, USER_ID)
+                        .with(user(USER_ID).roles("USER"))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isBadRequest());
@@ -129,7 +133,7 @@ class WishlistControllerTest {
                         ApiResponseDto.builder().isSuccess(true).message("Product removed from wishlist").build()));
 
         mockMvc.perform(delete("/wishlist/remove/{productId}", PRODUCT_ID)
-                        .header(USER_HEADER, USER_ID))
+                        .with(user(USER_ID).roles("USER")))
                 .andExpect(status().isNoContent());
     }
 
@@ -141,7 +145,7 @@ class WishlistControllerTest {
                         ApiResponseDto.builder().isSuccess(true).message("Product removed from wishlist").build()));
 
         mockMvc.perform(delete("/wishlist/remove/{productId}", "non-existent")
-                        .header(USER_HEADER, USER_ID))
+                        .with(user(USER_ID).roles("USER")))
                 .andExpect(status().isNoContent());
     }
 
@@ -166,7 +170,7 @@ class WishlistControllerTest {
                         ApiResponseDto.builder().isSuccess(true).response(items).build()));
 
         mockMvc.perform(get("/wishlist/get/byUser")
-                        .header(USER_HEADER, USER_ID))
+                        .with(user(USER_ID).roles("USER")))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.isSuccess").value(true))
                 .andExpect(jsonPath("$.response[0].productId").value(PRODUCT_ID))
@@ -182,7 +186,7 @@ class WishlistControllerTest {
                         ApiResponseDto.builder().isSuccess(true).response(Collections.emptyList()).build()));
 
         mockMvc.perform(get("/wishlist/get/byUser")
-                        .header(USER_HEADER, USER_ID))
+                        .with(user(USER_ID).roles("USER")))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.isSuccess").value(true))
                 .andExpect(jsonPath("$.response").isEmpty());
@@ -198,7 +202,7 @@ class WishlistControllerTest {
                         ApiResponseDto.builder().isSuccess(true).message("Item moved to cart successfully!").build()));
 
         mockMvc.perform(post("/wishlist/moveToCart/{productId}", PRODUCT_ID)
-                        .header(USER_HEADER, USER_ID))
+                        .with(user(USER_ID).roles("USER")))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.isSuccess").value(true))
                 .andExpect(jsonPath("$.message").value("Item moved to cart successfully!"));
@@ -211,7 +215,7 @@ class WishlistControllerTest {
                 .thenThrow(new ServiceUnavailableException("Cart service is currently unavailable. Item stays in your wishlist."));
 
         mockMvc.perform(post("/wishlist/moveToCart/{productId}", PRODUCT_ID)
-                        .header(USER_HEADER, USER_ID))
+                        .with(user(USER_ID).roles("USER")))
                 .andExpect(status().isServiceUnavailable())
                 .andExpect(jsonPath("$.isSuccess").value(false));
     }
@@ -223,7 +227,7 @@ class WishlistControllerTest {
                 .thenThrow(new ResourceNotFoundException("Product not found in wishlist"));
 
         mockMvc.perform(post("/wishlist/moveToCart/{productId}", PRODUCT_ID)
-                        .header(USER_HEADER, USER_ID))
+                        .with(user(USER_ID).roles("USER")))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.isSuccess").value(false));
     }
@@ -243,7 +247,7 @@ class WishlistControllerTest {
                         ApiResponseDto.builder().isSuccess(true).response(shareResponse).build()));
 
         mockMvc.perform(post("/wishlist/share")
-                        .header(USER_HEADER, USER_ID))
+                        .with(user(USER_ID).roles("USER")))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.isSuccess").value(true))
                 .andExpect(jsonPath("$.response.shareToken").value("abc-uuid-token"))

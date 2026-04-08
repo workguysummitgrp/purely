@@ -8,8 +8,30 @@ import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
+/**
+ * REST controller for wishlist operations.
+ *
+ * <p>All endpoints under {@code /wishlist} are mapped through the API Gateway
+ * via the route {@code /api/wishlist/**}. Authentication is handled per-service
+ * via Spring Security — the {@code AuthTokenFilter} validates the JWT token
+ * by calling auth-service and sets the user ID as the Authentication principal.
+ * Protected endpoints use {@code @PreAuthorize("hasRole('ROLE_USER')")} matching
+ * the cart-service pattern.</p>
+ *
+ * <h3>Endpoint Summary</h3>
+ * <ul>
+ *   <li>{@code POST /wishlist/add} — Add product to wishlist (US-001)</li>
+ *   <li>{@code DELETE /wishlist/remove/{productId}} — Remove product (US-002)</li>
+ *   <li>{@code GET /wishlist/get/byUser} — List wishlist items (US-003)</li>
+ *   <li>{@code POST /wishlist/moveToCart/{productId}} — Move to cart (US-004)</li>
+ *   <li>{@code POST /wishlist/share} — Generate share link (US-005)</li>
+ *   <li>{@code GET /wishlist/shared/{shareToken}} — View shared wishlist, no auth (US-005)</li>
+ * </ul>
+ */
 @RestController
 @RequestMapping("/wishlist")
 @Slf4j
@@ -18,44 +40,102 @@ public class WishlistController {
     @Autowired
     private WishlistService wishlistService;
 
+    /**
+     * Add a product to the authenticated user's wishlist.
+     *
+     * @param userId  the user identifier forwarded by API Gateway
+     * @param request the request body containing the product identifier
+     * @return 201 CREATED on success, 409 CONFLICT if duplicate, 404 if product not found
+     */
     @PostMapping("/add")
+    @PreAuthorize("hasRole('ROLE_USER')")
     public ResponseEntity<ApiResponseDto<?>> addToWishlist(
-            @RequestHeader("X-User-Id") String userId,
+            Authentication authentication,
             @Valid @RequestBody AddToWishlistRequest request) {
+        String userId = authentication.getPrincipal().toString();
         log.info("POST /wishlist/add - userId={}, productId={}", userId, request.getProductId());
         return wishlistService.addToWishlist(userId, request.getProductId());
     }
 
+    /**
+     * Remove a product from the authenticated user's wishlist.
+     *
+     * <p>Idempotent: returns 204 even if the product was not in the wishlist.</p>
+     *
+     * @param userId    the user identifier forwarded by API Gateway
+     * @param productId the product to remove
+     * @return 204 NO_CONTENT
+     */
     @DeleteMapping("/remove/{productId}")
+    @PreAuthorize("hasRole('ROLE_USER')")
     public ResponseEntity<ApiResponseDto<?>> removeFromWishlist(
-            @RequestHeader("X-User-Id") String userId,
+            Authentication authentication,
             @PathVariable String productId) {
+        String userId = authentication.getPrincipal().toString();
         log.info("DELETE /wishlist/remove/{} - userId={}", productId, userId);
         return wishlistService.removeFromWishlist(userId, productId);
     }
 
+    /**
+     * List all wishlist items for the authenticated user with enriched product details.
+     *
+     * @param userId the user identifier forwarded by API Gateway
+     * @return 200 OK with array of wishlist items (possibly empty)
+     */
     @GetMapping("/get/byUser")
+    @PreAuthorize("hasRole('ROLE_USER')")
     public ResponseEntity<ApiResponseDto<?>> getWishlistItems(
-            @RequestHeader("X-User-Id") String userId) {
+            Authentication authentication) {
+        String userId = authentication.getPrincipal().toString();
         log.info("GET /wishlist/get/byUser - userId={}", userId);
         return wishlistService.getWishlistItems(userId);
     }
 
+    /**
+     * Move a wishlist item to the user's shopping cart.
+     *
+     * <p>On success, the item is added to cart-service and removed from
+     * the wishlist. On failure (cart-service unavailable), the item
+     * remains in the wishlist and 503 is returned.</p>
+     *
+     * @param userId    the user identifier forwarded by API Gateway
+     * @param productId the product to move
+     * @return 200 OK on success, 503 if cart-service unavailable, 404 if not in wishlist
+     */
     @PostMapping("/moveToCart/{productId}")
+    @PreAuthorize("hasRole('ROLE_USER')")
     public ResponseEntity<ApiResponseDto<?>> moveToCart(
-            @RequestHeader("X-User-Id") String userId,
+            Authentication authentication,
             @PathVariable String productId) {
+        String userId = authentication.getPrincipal().toString();
         log.info("POST /wishlist/moveToCart/{} - userId={}", productId, userId);
         return wishlistService.moveToCart(userId, productId);
     }
 
+    /**
+     * Generate a shareable link for the authenticated user's wishlist.
+     *
+     * <p>If a share token already exists, the existing token is returned.
+     * Otherwise, a new UUID-based token is generated.</p>
+     *
+     * @param userId the user identifier forwarded by API Gateway
+     * @return 200 OK with share token and shareable URL
+     */
     @PostMapping("/share")
+    @PreAuthorize("hasRole('ROLE_USER')")
     public ResponseEntity<ApiResponseDto<?>> shareWishlist(
-            @RequestHeader("X-User-Id") String userId) {
+            Authentication authentication) {
+        String userId = authentication.getPrincipal().toString();
         log.info("POST /wishlist/share - userId={}", userId);
         return wishlistService.shareWishlist(userId);
     }
 
+    /**
+     * View a shared wishlist by share token (public endpoint, no authentication required).
+     *
+     * @param shareToken the UUID share token from the shareable URL
+     * @return 200 OK with read-only wishlist items, 404 if token is invalid
+     */
     @GetMapping("/shared/{shareToken}")
     public ResponseEntity<ApiResponseDto<?>> getSharedWishlist(
             @PathVariable String shareToken) {
