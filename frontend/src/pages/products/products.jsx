@@ -1,6 +1,7 @@
-// Modified by SDLC Agent | 2026-04-07 | purely-cart-bugfix-PURELY-1 | development
+// Modified by SDLC Agent | 2026-04-08 | purely-wishlist-service-PURELY-23 | development
+// Changes: Added WishlistButton (heart toggle) to each product card — US-007.
 import './products.css'
-import { useLocation, useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams, useLocation } from "react-router-dom";
 import Header from "../../components/header/header";
 import { useContext, useEffect, useState } from 'react';
 import Loading from '../../components/loading/loading';
@@ -10,6 +11,7 @@ import CartContext from '../../contexts/cart.context';
 import { AuthContext } from '../../contexts/auth.context';
 import Footer from '../../components/footer/footer';
 import { PLACEHOLDER_IMAGE } from '../../constants/images';
+import WishlistButton from '../../components/wishlist/WishlistButton';
 
 function Products() {
 
@@ -87,7 +89,7 @@ function CategoryWrapper({ category, categoryList }) {
 function ProductsWrapper({ products }) {
 
     const { addItemToCart } = useContext(CartContext);
-    const { user, toggleUser } = useContext(AuthContext)
+    const { user } = useContext(AuthContext)
     const [isLoading, setLoading] = useState(false);
     const navigate = useNavigate();
 
@@ -109,6 +111,10 @@ function ProductsWrapper({ products }) {
                         products.map((product) => {
                             return (
                                 <div className='box' key={product.id}>
+                                    {/* Wishlist heart toggle — positioned top-right of card */}
+                                    <div className="product-actions">
+                                        <WishlistButton productId={product.id} />
+                                    </div>
                                     <img src={`${product.imageUrl}`} className="image" alt='product' onError={(e) => { if (!e.target.dataset.fallback) { e.target.dataset.fallback = "true"; e.target.src = PLACEHOLDER_IMAGE; } }}></img>
                                     <div className='price' aria-label='image'>Rs. {product.price}</div>
                                     <div className='text-part'>

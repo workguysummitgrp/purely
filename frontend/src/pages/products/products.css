@@ -1,4 +1,7 @@
-/* category warpper styles */
+/* Modified by SDLC Agent | 2026-04-08 | purely-wishlist-service-PURELY-23 | development */
+/* Changes: Added .product-actions positioning for WishlistButton on product cards — US-007 */
+
+/* category wrapper styles */
 .category-wrapper {
     width: 100%;
     overflow: scroll;
@@ -89,6 +92,30 @@
     color:var(--body);
     background-color: var(--primary);
  }
+
+/* ── NEW: Wishlist heart button positioned top-right of product card ── */
+.product-actions {
+    position: absolute;
+    top: 13px;
+    right: 13px;
+    z-index: 1;
+}
+
+.product-actions .wishlist-btn {
+    /* White circular background so the heart is visible over any image */
+    background-color: rgba(255, 255, 255, 0.85);
+    border-radius: 50%;
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
+}
+
+.product-actions .wishlist-btn:hover {
+    background-color: rgba(255, 255, 255, 1);
+}
 
 @media all and (max-width: 768px) {
     .category-list {

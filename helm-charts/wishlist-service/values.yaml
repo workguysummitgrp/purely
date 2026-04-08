@@ -1,0 +1,26 @@
+wishlist:
+  label: wishlist
+  replicas: 1
+  containerPort: 8088
+  image: default
+  requests:
+    cpu: 250m
+    memory: 256Mi
+  limits:
+    cpu: 500m
+    memory: 512Mi
+  averageUtilization:
+   cpu: 60
+   memory: 60
+  service:
+    type: ClusterIP
+    port: 8088
+
+secret:
+  label: wishlist-secret
+  SPRING_DATA_MONGODB_URI_WISHLIST: PROVIDED_VIA_GITHUB_ACTIONS
+
+config:
+  label: wishlist-config-map
+  EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://registry-svc:80/eureka/
+  EUREKA_INSTANCE_HOSTNAME: wishlist-svc

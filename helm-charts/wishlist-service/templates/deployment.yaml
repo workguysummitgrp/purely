@@ -1,0 +1,56 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ printf "%s-depl" .Values.wishlist.label }}  
+  labels:
+    app: {{ .Values.wishlist.label }}
+spec:
+  replicas: {{ .Values.wishlist.replicas }}
+  selector:
+    matchLabels:
+      app: {{ .Values.wishlist.label }}
+  template:
+    metadata:
+      labels:
+        app: {{ .Values.wishlist.label }}
+    spec:
+      containers:
+        - name: {{ printf "%s-container" .Values.wishlist.label }}
+          image: {{ .Values.wishlist.image }}
+          ports:
+            - containerPort: {{ .Values.wishlist.containerPort }}
+          env:
+            - name: EUREKA_CLIENT_SERVICEURL_DEFAULTZONE
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ .Values.config.label }}
+                  key: EUREKA_CLIENT_SERVICEURL_DEFAULTZONE
+            - name: SPRING_DATA_MONGODB_URI
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.secret.label }}
+                  key: SPRING_DATA_MONGODB_URI_WISHLIST
+            - name: EUREKA_INSTANCE_HOSTNAME
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ .Values.config.label }}
+                  key: EUREKA_INSTANCE_HOSTNAME
+          readinessProbe:
+            httpGet:
+              path: /actuator/health
+              port: 8088
+            initialDelaySeconds: 30
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /actuator/health
+              port: 8088
+            initialDelaySeconds: 45
+            periodSeconds: 10
+          resources:
+            requests:
+              cpu: {{ .Values.wishlist.requests.cpu }}
+              memory: {{ .Values.wishlist.requests.memory }}
+            limits:
+              cpu: {{ .Values.wishlist.limits.cpu }}
+              memory: {{ .Values.wishlist.limits.memory }}

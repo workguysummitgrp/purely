@@ -1,11 +1,14 @@
+// Modified by SDLC Agent | 2026-04-08 | purely-wishlist-service-PURELY-23 | development
+// Changes: Added WishlistBadge import and rendered it next to the cart icon in the header.
 import { useContext, useEffect, useState } from "react";
 import Logo from "../logo/logo";
-import { Link, useAsyncError, useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import "../../assets/styles/index.css"
 import "./header.css"
 import Cart from "../cart/cart";
 import { AuthContext } from "../../contexts/auth.context";
 import CartContext from "../../contexts/cart.context";
+import WishlistBadge from "../wishlist/WishlistBadge";
 
 function Header() {
     const navigate = useNavigate();
@@ -92,7 +95,9 @@ function Header() {
                     )}
                 </ul>
 
-                <div>
+                {/* Wishlist + Cart icons grouped together */}
+                <div className="header-actions">
+                    <WishlistBadge />
                     <Link onClick={toggleCart}>
                         <i className="fa fa-shopping-cart" aria-hidden="true"></i>
                         <span>({cart.noOfCartItems || 0})</span>

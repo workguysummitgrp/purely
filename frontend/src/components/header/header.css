@@ -1,3 +1,6 @@
+/* Modified by SDLC Agent | 2026-04-08 | purely-wishlist-service-PURELY-23 | development */
+/* Changes: Added .header-actions container to group wishlist badge + cart icon */
+
 .app-header {
     height: 10vh;
     width: 100%;
@@ -74,9 +77,7 @@
     justify-content: center;
 }
 .app-header input {
-    /* width: 400px; */
     height: 100%;
-    /* min-width: 200px; */
     flex: 1 1 250px;
     padding: 10px 3px 10px 10px;
     background-color: var(--light);
@@ -110,6 +111,12 @@
     width: 100%;
 }
 
+/* ── NEW: header-actions container for wishlist badge + cart icon ── */
+.header-actions {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
 
 @media all and (max-width:900px) {
     .fa-times, .fa-bars {
@@ -153,5 +160,9 @@
     }
     .app-header.bottom{
         display: flex;
+    }
+    /* Reduce gap between wishlist and cart on mobile */
+    .header-actions {
+        gap: 10px;
     }
 }
