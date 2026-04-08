@@ -24,17 +24,6 @@ import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
 
-/**
- * Core business logic for the wishlist-service.
- *
- * <p>Handles add/remove/list/share/move-to-cart operations on wishlist items.
- * Follows the service pattern established by {@code CartServiceImpl} in the
- * existing Purely codebase — uses {@code @Component}, Lombok {@code @Slf4j},
- * and returns {@code ResponseEntity<ApiResponseDto<?>>} for all operations.</p>
- *
- * <p>Resilience4j {@code @CircuitBreaker} annotations protect calls to
- * product-service and cart-service from cascading failures.</p>
- */
 @Component
 @Slf4j
 public class WishlistService {
@@ -51,27 +40,12 @@ public class WishlistService {
     @Autowired
     private CartServiceClient cartServiceClient;
 
-    /**
-     * Add a product to the user's wishlist.
-     *
-     * <p>Validates product existence via product-service before saving.
-     * Duplicate additions are rejected with HTTP 409.</p>
-     *
-     * @param userId    the authenticated user's identifier
-     * @param productId the product to add
-     * @return 201 CREATED on success
-     * @throws DuplicateItemException       if the product is already in the wishlist
-     * @throws ResourceNotFoundException    if the product does not exist
-     * @throws ServiceUnavailableException  if product-service is unreachable
-     */
     @CircuitBreaker(name = "productService", fallbackMethod = "addToWishlistFallback")
     public ResponseEntity<ApiResponseDto<?>> addToWishlist(String userId, String productId) {
-        // Check for duplicate before calling product-service
         if (wishlistRepository.existsByUserIdAndProductId(userId, productId)) {
             throw new DuplicateItemException("Product already in wishlist");
         }
 
-        // Validate product existence via product-service
         try {
             ResponseEntity<ApiResponseDto<ProductDto>> productResponse =
                     productServiceClient.getProductById(productId);
@@ -89,7 +63,6 @@ public class WishlistService {
             throw new ServiceUnavailableException("Product service is currently unavailable. Please try again later.");
         }
 
-        // Save the wishlist item
         WishlistItem item = WishlistItem.builder()
                 .userId(userId)
                 .productId(productId)
@@ -107,14 +80,6 @@ public class WishlistService {
         );
     }
 
-    /**
-     * Fallback method when product-service circuit breaker is open.
-     *
-     * @param userId    the user identifier
-     * @param productId the product identifier
-     * @param throwable the cause of the fallback
-     * @return 503 SERVICE_UNAVAILABLE response
-     */
     @SuppressWarnings("unused")
     private ResponseEntity<ApiResponseDto<?>> addToWishlistFallback(String userId, String productId, Throwable throwable) {
         log.warn("Circuit breaker open for productService during add. userId={}, productId={}, reason={}",
@@ -128,15 +93,6 @@ public class WishlistService {
         throw new ServiceUnavailableException("Product service is currently unavailable. Please try again later.");
     }
 
-    /**
-     * Remove a product from the user's wishlist.
-     *
-     * <p>Idempotent: returns 204 even if the item was not in the wishlist.</p>
-     *
-     * @param userId    the authenticated user's identifier
-     * @param productId the product to remove
-     * @return 204 NO_CONTENT
-     */
     public ResponseEntity<ApiResponseDto<?>> removeFromWishlist(String userId, String productId) {
         wishlistRepository.deleteByUserIdAndProductId(userId, productId);
         log.info("Product {} removed from wishlist for user {}", productId, userId);
@@ -149,16 +105,6 @@ public class WishlistService {
         );
     }
 
-    /**
-     * List all wishlist items for a user, enriched with product details.
-     *
-     * <p>Product details (name, price, image, availability) are fetched from
-     * product-service. If product-service is unavailable, items are returned
-     * with {@code available = false} and placeholder values.</p>
-     *
-     * @param userId the authenticated user's identifier
-     * @return 200 OK with list of enriched wishlist items
-     */
     @CircuitBreaker(name = "productService", fallbackMethod = "getWishlistItemsFallback")
     public ResponseEntity<ApiResponseDto<?>> getWishlistItems(String userId) {
         List<WishlistItem> items = wishlistRepository.findByUserId(userId);
@@ -173,14 +119,6 @@ public class WishlistService {
         );
     }
 
-    /**
-     * Fallback when product-service is unavailable during wishlist listing.
-     * Returns items with stale/unavailable flags instead of failing completely.
-     *
-     * @param userId    the user identifier
-     * @param throwable the cause of the fallback
-     * @return 200 OK with items flagged as unavailable
-     */
     @SuppressWarnings("unused")
     private ResponseEntity<ApiResponseDto<?>> getWishlistItemsFallback(String userId, Throwable throwable) {
         log.warn("Circuit breaker open for productService during list. userId={}, reason={}",
@@ -206,27 +144,12 @@ public class WishlistService {
         );
     }
 
-    /**
-     * Move a wishlist item to the user's shopping cart.
-     *
-     * <p>This is a two-step operation: (1) call cart-service to add the item,
-     * then (2) remove the item from the wishlist. If cart-service fails,
-     * the item remains in the wishlist and HTTP 503 is returned.</p>
-     *
-     * @param userId    the authenticated user's identifier
-     * @param productId the product to move
-     * @return 200 OK on success
-     * @throws ResourceNotFoundException    if the product is not in the wishlist
-     * @throws ServiceUnavailableException  if cart-service is unreachable
-     */
     @CircuitBreaker(name = "cartService", fallbackMethod = "moveToCartFallback")
     public ResponseEntity<ApiResponseDto<?>> moveToCart(String userId, String productId) {
-        // Verify item exists in wishlist
         if (!wishlistRepository.existsByUserIdAndProductId(userId, productId)) {
             throw new ResourceNotFoundException("Product not found in wishlist");
         }
 
-        // Validate product is still available via product-service
         try {
             ResponseEntity<ApiResponseDto<ProductDto>> productResponse =
                     productServiceClient.getProductById(productId);
@@ -242,7 +165,6 @@ public class WishlistService {
             throw new ServiceUnavailableException("Unable to verify product availability. Please try again later.");
         }
 
-        // Add to cart via cart-service
         try {
             CartItemRequestDto cartRequest = CartItemRequestDto.builder()
                     .productId(productId)
@@ -254,7 +176,6 @@ public class WishlistService {
             throw new ServiceUnavailableException("Cart service is currently unavailable. Item stays in your wishlist.");
         }
 
-        // Remove from wishlist after successful cart addition
         wishlistRepository.deleteByUserIdAndProductId(userId, productId);
         log.info("Product {} moved from wishlist to cart for user {}", productId, userId);
 
@@ -266,14 +187,6 @@ public class WishlistService {
         );
     }
 
-    /**
-     * Fallback when cart-service circuit breaker is open during move-to-cart.
-     *
-     * @param userId    the user identifier
-     * @param productId the product identifier
-     * @param throwable the cause of the fallback
-     * @return 503 SERVICE_UNAVAILABLE, item stays in wishlist
-     */
     @SuppressWarnings("unused")
     private ResponseEntity<ApiResponseDto<?>> moveToCartFallback(String userId, String productId, Throwable throwable) {
         log.warn("Circuit breaker open for cartService during moveToCart. userId={}, productId={}, reason={}",
@@ -284,17 +197,7 @@ public class WishlistService {
         throw new ServiceUnavailableException("Cart service is currently unavailable. Item stays in your wishlist.");
     }
 
-    /**
-     * Generate or retrieve a shareable link for the user's wishlist.
-     *
-     * <p>If a share token already exists for this user, the existing token
-     * is returned. Otherwise, a new UUID-based token is generated.</p>
-     *
-     * @param userId the authenticated user's identifier
-     * @return 200 OK with the share token and URL
-     */
     public ResponseEntity<ApiResponseDto<?>> shareWishlist(String userId) {
-        // Check if a share token already exists for this user
         ShareToken shareToken = shareTokenRepository.findByUserId(userId)
                 .orElseGet(() -> {
                     ShareToken newToken = ShareToken.builder()
@@ -321,16 +224,6 @@ public class WishlistService {
         );
     }
 
-    /**
-     * Retrieve a shared wishlist by token (public, no authentication required).
-     *
-     * <p>Product details are enriched from product-service. If product-service
-     * is unavailable, items are returned with stale/unavailable flags.</p>
-     *
-     * @param shareToken the UUID share token from the shareable URL
-     * @return 200 OK with the read-only wishlist
-     * @throws ResourceNotFoundException if the share token is invalid
-     */
     @CircuitBreaker(name = "productService", fallbackMethod = "getSharedWishlistFallback")
     public ResponseEntity<ApiResponseDto<?>> getSharedWishlist(String shareToken) {
         ShareToken tokenDoc = shareTokenRepository.findByToken(shareToken)
@@ -348,13 +241,6 @@ public class WishlistService {
         );
     }
 
-    /**
-     * Fallback for shared wishlist when product-service is unavailable.
-     *
-     * @param shareToken the share token
-     * @param throwable  the cause
-     * @return 200 OK with items flagged as unavailable
-     */
     @SuppressWarnings("unused")
     private ResponseEntity<ApiResponseDto<?>> getSharedWishlistFallback(String shareToken, Throwable throwable) {
         log.warn("Circuit breaker open for productService during shared wishlist. token={}, reason={}",
@@ -385,16 +271,6 @@ public class WishlistService {
         );
     }
 
-    /**
-     * Enrich wishlist items with product details from product-service.
-     *
-     * <p>For each item, a synchronous call is made to product-service.
-     * If a single product lookup fails, that item is flagged as unavailable
-     * rather than failing the entire list.</p>
-     *
-     * @param items the raw wishlist items from MongoDB
-     * @return enriched response DTOs with product details
-     */
     private List<WishlistItemResponse> enrichWithProductDetails(List<WishlistItem> items) {
         List<WishlistItemResponse> enrichedItems = new ArrayList<>();
 
@@ -416,7 +292,6 @@ public class WishlistService {
                             .addedAt(item.getAddedAt())
                             .build());
                 } else {
-                    // Product not found — mark as unavailable
                     enrichedItems.add(buildUnavailableItem(item));
                 }
             } catch (Exception e) {
@@ -429,12 +304,6 @@ public class WishlistService {
         return enrichedItems;
     }
 
-    /**
-     * Build a WishlistItemResponse with unavailable/stale data flags.
-     *
-     * @param item the raw wishlist item
-     * @return a response DTO marked as unavailable
-     */
     private WishlistItemResponse buildUnavailableItem(WishlistItem item) {
         return WishlistItemResponse.builder()
                 .productId(item.getProductId())
