@@ -8,22 +8,9 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
-/**
- * OpenFeign declarative client for the product-service.
- *
- * <p>Communicates via Eureka service discovery using the logical name
- * {@code PRODUCT-SERVICE}. Used to validate product existence and
- * retrieve product details when listing wishlist items.</p>
- */
 @FeignClient("PRODUCT-SERVICE")
 public interface ProductServiceClient {
 
-    /**
-     * Retrieve product details by product identifier.
-     *
-     * @param id the product identifier
-     * @return API response wrapping a {@link ProductDto}, or null body when not found
-     */
     @GetMapping("/product/get/byId")
     ResponseEntity<ApiResponseDto<ProductDto>> getProductById(@RequestParam String id);
 

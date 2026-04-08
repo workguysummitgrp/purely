@@ -9,22 +9,9 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
-/**
- * Global exception handler for the wishlist-service REST API.
- *
- * <p>Follows the {@code RestExceptionHandler} pattern from cart-service.
- * All exceptions are mapped to a consistent {@link ApiResponseDto} response
- * with appropriate HTTP status codes.</p>
- */
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
-    /**
-     * Handles cases where a requested resource (product, wishlist item, share token) is not found.
-     *
-     * @param exception the thrown ResourceNotFoundException
-     * @return 404 NOT_FOUND response
-     */
     @ExceptionHandler(value = ResourceNotFoundException.class)
     public ResponseEntity<ApiResponseDto<?>> handleResourceNotFound(ResourceNotFoundException exception) {
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(
@@ -35,12 +22,6 @@ public class GlobalExceptionHandler {
         );
     }
 
-    /**
-     * Handles duplicate wishlist item additions (product already in wishlist).
-     *
-     * @param exception the thrown DuplicateItemException
-     * @return 409 CONFLICT response
-     */
     @ExceptionHandler(value = DuplicateItemException.class)
     public ResponseEntity<ApiResponseDto<?>> handleDuplicateItem(DuplicateItemException exception) {
         return ResponseEntity.status(HttpStatus.CONFLICT).body(
@@ -51,12 +32,6 @@ public class GlobalExceptionHandler {
         );
     }
 
-    /**
-     * Handles MongoDB duplicate key violations as a fallback for race conditions.
-     *
-     * @param exception the thrown DuplicateKeyException from MongoDB
-     * @return 409 CONFLICT response
-     */
     @ExceptionHandler(value = DuplicateKeyException.class)
     public ResponseEntity<ApiResponseDto<?>> handleDuplicateKey(DuplicateKeyException exception) {
         return ResponseEntity.status(HttpStatus.CONFLICT).body(
@@ -67,12 +42,6 @@ public class GlobalExceptionHandler {
         );
     }
 
-    /**
-     * Handles downstream service unavailability (e.g., cart-service or product-service).
-     *
-     * @param exception the thrown ServiceUnavailableException
-     * @return 503 SERVICE_UNAVAILABLE response
-     */
     @ExceptionHandler(value = ServiceUnavailableException.class)
     public ResponseEntity<ApiResponseDto<?>> handleServiceUnavailable(ServiceUnavailableException exception) {
         return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).body(
@@ -83,12 +52,6 @@ public class GlobalExceptionHandler {
         );
     }
 
-    /**
-     * Handles Bean Validation failures on request DTOs.
-     *
-     * @param exception the thrown MethodArgumentNotValidException
-     * @return 400 BAD_REQUEST response with the first field error message
-     */
     @ExceptionHandler(value = MethodArgumentNotValidException.class)
     public ResponseEntity<ApiResponseDto<?>> handleValidation(MethodArgumentNotValidException exception) {
         String errorMessage = exception.getBindingResult().getFieldErrors().stream()
@@ -103,12 +66,6 @@ public class GlobalExceptionHandler {
         );
     }
 
-    /**
-     * Catch-all handler for unexpected exceptions.
-     *
-     * @param exception the thrown Exception
-     * @return 500 INTERNAL_SERVER_ERROR response
-     */
     @ExceptionHandler(value = Exception.class)
     public ResponseEntity<ApiResponseDto<?>> handleGenericException(Exception exception) {
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(

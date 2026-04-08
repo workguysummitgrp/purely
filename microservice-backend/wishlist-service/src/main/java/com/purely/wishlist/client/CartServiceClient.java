@@ -9,26 +9,9 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
 
-/**
- * OpenFeign declarative client for the cart-service.
- *
- * <p>Communicates via Eureka service discovery using the logical name
- * {@code CART-SERVICE}. Used by the "Move to Cart" feature to transfer
- * a wishlist item into the user's shopping cart.</p>
- *
- * <p>The {@code X-User-Id} header is forwarded to cart-service to
- * identify the owning user for the cart operation.</p>
- */
 @FeignClient("CART-SERVICE")
 public interface CartServiceClient {
 
-    /**
-     * Add an item to the user's cart.
-     *
-     * @param userId     the user identifier, forwarded as a header
-     * @param requestDto the cart item payload (productId + quantity)
-     * @return API response indicating success or failure
-     */
     @PostMapping("/cart/add")
     ResponseEntity<ApiResponseDto<?>> addItemToCart(
             @RequestHeader("X-User-Id") String userId,
