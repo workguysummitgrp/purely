@@ -1,3 +1,7 @@
+# Modified by SDLC Agent | 2026-04-08 | purely-wishlist-service-PURELY-23 | development
+# Change: Added wishlist-service route (/api/wishlist/** -> WISHLIST-SERVICE)
+# CR-004 fix: Added wishlist-service-public route for /api/wishlist/shared/** (no JWT).
+# Placed before the general wishlist-service route for first-match routing.
 server:
   port: 8080
 
@@ -58,6 +62,27 @@ spring:
             - Path=/api/order-service/**
           filters:
             - StripPrefix=2
+
+        # --- PUBLIC: Shared Wishlist Route (no JWT) ---
+        # Must appear BEFORE the general wishlist-service route (first-match).
+        # GET /api/wishlist/shared/{shareToken} is publicly accessible.
+        - id: wishlist-service-public
+          uri: lb://WISHLIST-SERVICE
+          predicates:
+            - Path=/api/wishlist/shared/**
+          filters:
+            - StripPrefix=1
+
+        # --- Wishlist Service Route (US-009) ---
+        # Routes /api/wishlist/** to WISHLIST-SERVICE via Eureka.
+        # StripPrefix=1 removes /api, forwarding /wishlist/** to the service.
+        # AuthorizationHeaderFilter enforces JWT on all non-public paths.
+        - id: wishlist-service
+          uri: lb://WISHLIST-SERVICE
+          predicates:
+            - Path=/api/wishlist/**
+          filters:
+            - StripPrefix=1
 
       default-filters:
         - DedupeResponseHeader=Access-Control-Allow-Credentials Access-Control-Allow-Origin
